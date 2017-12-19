@@ -13,6 +13,7 @@ use std::io::prelude::*;
 mod support;
 mod utils;
 
+
 fn get_shader_content(name: &'static str) -> String {
     let mut f = File::open(name).expect("can not find shader file");
     let mut contents = String::new();
@@ -38,6 +39,8 @@ fn main() {
     let texture = utils::encode_data_to_texture(data, &display);
     let secret_tex = utils::encode_data_to_texture(secret, &display);
 
+    let sbox_tex = utils::get_sbox_texture(&display);
+
     let (vb, ib) = support::build_rectangle_vb_ib(&display);
 
     let vertex_shader = get_shader_content("/home/disoul/github/rust-glaes/src/shaders/vertex.vert");
@@ -54,6 +57,7 @@ fn main() {
     output.as_surface().draw(&vb, &ib, &program, &uniform!{
         input: &texture,
         secret: &secret_tex,
+        sbox: &sbox_tex,
     },&Default::default()).unwrap();
 
     println!("get output!");
