@@ -6,7 +6,7 @@ use glium::texture::buffer_texture::BufferTextureType;
 
 pub fn encode_data_to_texture<F: ?Sized>(data: &[u8], facade: &F) -> BufferTexture<(u8,u8,u8,u8)> where F: glium::backend::Facade {
     let mut buffer_data: &mut[(u8,u8,u8,u8); 4] = &mut[(0,0,0,0), (0,0,0,0), (0,0,0,0), (0,0,0,0)];
-    for i in 0..3 {
+    for i in 0..4 {
         let buffer_data = &mut buffer_data;
         buffer_data[i] = (data[i * 4 + 0], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]);
     }
