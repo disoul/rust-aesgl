@@ -32,8 +32,8 @@ fn main() {
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
-    let data: &[u8] = &[255, 255, 0, 0, 0, 0, 0, 234, 0, 0, 0, 0, 12, 34, 33, 56, 77, 88, 0];
-    let secret: &[u8] = &[145, 23, 0, 0, 23, 0, 0, 0, 3, 0, 0, 10, 0, 0, 55, 0];
+    let data: &[u8] = &[12, 255, 0, 0, 0, 0, 0, 234, 0, 0, 0, 0, 12, 34, 33, 56, 77, 88, 0];
+    let secret: &[u8] = &[11, 23, 0, 0, 23, 0, 0, 0, 3, 0, 0, 10, 0, 0, 5, 0, 0, 0, 0, 0];
 
     let texture = utils::encode_data_to_texture(data, &display);
     let secret_tex = utils::encode_data_to_texture(secret, &display);

@@ -1,21 +1,23 @@
 #version 140
+#extension GL_EXT_gpu_shader4 : enable
 
-uniform samplerBuffer input;
-uniform samplerBuffer secret;
+uniform usamplerBuffer input;
+uniform usamplerBuffer secret;
 in vec2 point_pos;
-/*
+out uvec4 color;
+
+// 44矩阵亦或
 mat4 mat_xor(mat4 a, mat4 b) {
   mat4 output;
 
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      output[i][j] = a[i][j] ^ b[i][j];
+      output[i][j] = int(a[i][j]) ^ int(b[i][j]);
     }
   }
 
   return output;
 }
-*/
 
 vec4 get_write_data(mat4 data) {
   if (point_pos.y <= -0.5) {
@@ -41,6 +43,6 @@ void main() {
   secret_mat[2] = texelFetch(secret, 2);
   secret_mat[3] = texelFetch(secret, 3);
 
-  gl_FragColor = get_write_data(secret_mat);
-  //gl_FragColor = vec4(1,1,1,1);
+  vec4 a = get_write_data(mat_xor(input_mat, secret_mat));
+  gl_FragColor = vec4(a[0] / 255.0, a[1] / 255.0, a[2] / 255.0, a[3] / 255.0);
 }

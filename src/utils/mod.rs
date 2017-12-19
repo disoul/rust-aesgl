@@ -10,7 +10,7 @@ pub fn encode_data_to_texture<F: ?Sized>(data: &[u8], facade: &F) -> BufferTextu
         let buffer_data = &mut buffer_data;
         buffer_data[i] = (data[i * 4 + 0], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]);
     }
-    let texture = BufferTexture::new(facade, buffer_data, BufferTextureType::Float);
+    let texture = BufferTexture::new(facade, buffer_data, BufferTextureType::Unsigned);
 
     let texture: BufferTexture<(u8,u8,u8,u8)> = match texture {
         Ok(t) => t,
