@@ -3,9 +3,18 @@
 
 uniform usamplerBuffer input;
 uniform usamplerBuffer secret;
+uniform usamplerBuffer rc;
 uniform usampler2D sbox;
 in vec2 point_pos;
 out uvec4 color;
+
+// 循环左移8bit
+int rot8(int input) {
+  int a = input << 8;
+  int b = input >> 24;
+
+  return a | b;
+}
 
 // 44矩阵亦或
 mat4 mat_xor(mat4 a, mat4 b) {
@@ -32,16 +41,20 @@ float access_sbox_with_index(int x, int y) {
   return data;
 }
 
+float get_sbox_value(int input) {
+  int x = input >> 4;
+  int y = input << 28 >> 28;
+
+  return access_sbox_with_index(x, y);
+}
+
 mat4 sbox_replace(mat4 input) {
   mat4 output;
   output = input;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       int value = int(input[i][j]);
-      int x = value >> 4;
-      int y = value << 4 >> 4;
-
-      output[i][j] = access_sbox_with_index(x, y);
+      output[i][j] = get_sbox_value(value);
     }
   }
 
@@ -104,6 +117,51 @@ mat4 mix_columns(mat4 input) {
   return output;
 }
 
+/**
+ * input为32bit数
+*/
+int secret_func_g(int input, int i) {
+  int output = rot8(input);
+  int k0 = output >> 24;
+  int k1 = output << 8 >> 24;
+  int k2 = output << 16 >> 24;
+  int k3 = output << 24 >> 24;
+
+  int k0_s = int(get_sbox_value(k0));
+  int k1_s = int(get_sbox_value(k1));
+  int k2_s = int(get_sbox_value(k2));
+  int k3_s = int(get_sbox_value(k3));
+
+  int new_num = (k0_s << 24) | (k1_s << 16) | (k2_s << 8) | k3_s;
+
+  int _i = i / 4;
+  int x = i % 4;
+  vec4 rc_values = texelFetch(rc, _i);
+  int rc_value = int(rc_values[x]);
+  rc_value = rc_value << 24;
+
+  return new_num ^ rc_value;
+}
+
+mat4 secret_update(mat4 input, int rounds) {
+  int w0 = (int(input[0][0]) << 24) | (int(input[1][0]) << 16) | (int(input[2][0]) << 8) | (int(input[3][0]));
+  int w1 = (int(input[0][1]) << 24) | (int(input[1][1]) << 16) | (int(input[2][1]) << 8) | (int(input[3][1]));
+  int w2 = (int(input[0][2]) << 24) | (int(input[1][2]) << 16) | (int(input[2][2]) << 8) | (int(input[3][2]));
+  int w3 = (int(input[0][3]) << 24) | (int(input[1][3]) << 16) | (int(input[2][3]) << 8) | (int(input[3][3]));
+  int w4 = w0 ^ secret_func_g(w3, rounds * 4);
+  int w5 = w1 ^ w4;
+  int w6 = w2 ^ w5;
+  int w7 = w3 ^ w6;
+
+  mat4 output = input;
+  output[0] = vec4(w4 >> 24, w5 >> 24, w6 >> 24, w7 >> 24);
+  output[1] = vec4(w4 << 8 >> 24, w5 << 8 >> 24, w6 << 8 >> 24, w7 << 8 >> 24);
+  output[2] = vec4(w4 << 16 >> 24, w5 << 16 >> 24, w6 << 16 >> 24, w7 << 16 >> 24);
+  output[3] = vec4(w4 << 24 >> 24, w5 << 24 >> 24, w6 << 24 >> 24, w7 << 24 >> 24);
+
+  return output;
+}
+
 vec4 get_write_data(mat4 data) {
   if (point_pos.y <= -0.5) {
     return data[0];
@@ -116,13 +174,14 @@ vec4 get_write_data(mat4 data) {
   }
 }
 
-mat4 pipeline(mat4 input, mat4 secret) {
+mat4 pipeline(mat4 input, mat4 secret, int rounds) {
   mat4 output = input;
   output = mat_xor(input, secret);
   output = sbox_replace(output);
   output = row_shift(output);
   output = mix_columns(output);
 
+  mat4 new_secret = secret_update(secret, rounds + 1);
   return output;
 }
 
@@ -139,7 +198,7 @@ void main() {
   secret_mat[2] = texelFetch(secret, 2);
   secret_mat[3] = texelFetch(secret, 3);
 
-  mat4 output = pipeline(input_mat, secret_mat);
+  mat4 output = pipeline(input_mat, secret_mat, 0);
   vec4 data = get_write_data(output);
 
   gl_FragColor = vec4(data[0] / 255.0, data[1] / 255.0, data[2] / 255.0, data[3] / 255.0);

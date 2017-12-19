@@ -38,6 +38,15 @@ fn main() {
 
     let texture = utils::encode_data_to_texture(data, &display);
     let secret_tex = utils::encode_data_to_texture(secret, &display);
+    let RC: &[(u8, u8, u8, u8);3] = &[(0x00, 0x01, 0x02, 0x04), (0x08, 0x10, 0x20, 0x40), (0x80, 0x1B, 0x36, 0x00)];
+    let RC_tex: BufferTexture<(u8, u8, u8, u8)> = match BufferTexture::new(
+        &display,
+        RC,
+        BufferTextureType::Unsigned
+    ) {
+        Err(_) => panic!("RC texture error"),
+        Ok(t) => t
+    };
 
     let sbox_tex = utils::get_sbox_texture(&display);
 
@@ -58,6 +67,7 @@ fn main() {
         input: &texture,
         secret: &secret_tex,
         sbox: &sbox_tex,
+        rc: &RC_tex,
     },&Default::default()).unwrap();
 
     println!("get output!");
