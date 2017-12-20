@@ -58,8 +58,8 @@ fn main() {
 
     let (vb, ib) = support::build_rectangle_vb_ib(&display);
 
-    let vertex_shader = get_shader_content("/home/disoul/github/rust-glaes/src/shaders/vertex.vert");
-    let fragment_shader = get_shader_content("/home/disoul/github/rust-glaes/src/shaders/fragment.frag");
+    let vertex_shader = include_str!("shaders/vertex.vert");
+    let fragment_shader = include_str!("shaders/fragment.frag");
 
     let program = glium::Program::from_source(&display, &vertex_shader, &fragment_shader, None);
     let program = match program {
