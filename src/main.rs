@@ -33,11 +33,17 @@ fn main() {
     let context = glutin::ContextBuilder::new();
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
-    let data: &[u8] = &[12, 255, 0, 0, 0, 0, 0, 234, 0, 0, 0, 0, 12, 34, 33, 56, 77, 88, 0];
-    let secret: &[u8] = &[11, 23, 0, 0, 23, 0, 0, 0, 3, 0, 0, 10, 0, 0, 5, 0, 0, 0, 0, 0];
+    let input_data = utils::read_file_as_bytes("input.in");
 
-    let texture = utils::encode_data_to_texture(data, &display);
-    let secret_tex = utils::encode_data_to_texture(secret, &display);
+    // 密钥只会取其前16字节
+    let secret_data = utils::read_file_as_bytes("secret.in");
+    println!("input{:?}", secret_data);
+
+    let data_size = (input_data.len() as f32 / 16.0 as f32).ceil() as u32;
+
+    let texture = utils::encode_data_to_texture(input_data, &display);
+    let secret_tex = utils::encode_data_to_texture(secret_data, &display);
+
     let RC: &[(u8, u8, u8, u8);3] = &[(0x00, 0x01, 0x02, 0x04), (0x08, 0x10, 0x20, 0x40), (0x80, 0x1B, 0x36, 0x00)];
     let RC_tex: BufferTexture<(u8, u8, u8, u8)> = match BufferTexture::new(
         &display,
@@ -61,19 +67,23 @@ fn main() {
         Err(_) => return
     };
 
-    let output = support::build_renderable_texture(&display);
+    // 根据数据长度生成4 * n的贴图
+    let output = support::build_renderable_texture(&display, data_size);
     output.as_surface().clear_color(0.0, 0.0, 0.0, 0.0);
     output.as_surface().draw(&vb, &ib, &program, &uniform!{
         input: &texture,
         secret: &secret_tex,
         sbox: &sbox_tex,
         rc: &RC_tex,
+        size: data_size,
     },&Default::default()).unwrap();
 
     println!("get output!");
     let data = utils::decode_data_from_texture(output);
+    println!("data{:?}, len{}", data, data.len());
 
-    println!("data{:?}", data);
+    let s =utils::bytes_to_hex_string(data);
+    println!("out: {}", s);
 
     display.assert_no_error(None);
 

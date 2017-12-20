@@ -70,6 +70,6 @@ pub fn build_rectangle_vb_ib<F: ?Sized>(facade: &F)
     )
 }
 
-pub fn build_renderable_texture<F: ?Sized>(facade: &F) -> glium::Texture2d where F: Facade {
-    glium::Texture2d::empty(facade, 1, 4).unwrap()
+pub fn build_renderable_texture<F: ?Sized>(facade: &F, size: u32) -> glium::Texture2d where F: Facade {
+    glium::Texture2d::empty(facade, size, 4).unwrap()
 }

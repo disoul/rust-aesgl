@@ -37,13 +37,40 @@ pub fn get_sbox_texture<F: ?Sized>(facade: &F) -> UnsignedTexture2d  where F: gl
     return texture;
 }
 
-pub fn encode_data_to_texture<F: ?Sized>(data: &[u8], facade: &F) -> BufferTexture<(u8,u8,u8,u8)> where F: glium::backend::Facade {
-    let mut buffer_data: &mut[(u8,u8,u8,u8); 4] = &mut[(0,0,0,0), (0,0,0,0), (0,0,0,0), (0,0,0,0)];
-    for i in 0..4 {
-        let buffer_data = &mut buffer_data;
-        buffer_data[i] = (data[i * 4 + 0], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]);
+pub fn encode_data_to_texture<F: ?Sized>(data: Vec<u8>, facade: &F) -> BufferTexture<(u8,u8,u8,u8)> where F: glium::backend::Facade {
+    let mut buffer_data: Vec<(u8, u8, u8, u8)> = vec![];
+    let mut group_size = data.len() / 16;
+    let padding_size = data.len() % 16;
+
+    for i in 0..group_size {
+        buffer_data.push((data[16 * i + 0], data[16 * i + 1], data[16 * i + 2], data[16 * i + 3]));
+        buffer_data.push((data[16 * i + 4], data[16 * i + 5], data[16 * i + 6], data[16 * i + 7]));
+        buffer_data.push((data[16 * i + 8], data[16 * i + 9], data[16 * i + 10], data[16 * i + 11]));
+        buffer_data.push((data[16 * i + 12], data[16 * i + 13], data[16 * i + 14], data[16 * i + 15]));
     }
-    let texture = BufferTexture::new(facade, buffer_data, BufferTextureType::Unsigned);
+
+    /*
+     * 为不齐16的补0
+     */
+    if padding_size != 0 {
+        let index = group_size * 16;
+        let mut padding: Vec<u8> = vec![];
+        for i in 0..padding_size {
+            padding.push(data[index + i]);
+        }
+        for i in 0..(16-padding_size){
+            padding.push(0);
+        }
+        buffer_data.push((padding[0], padding[1], padding[2], padding[3]));
+        buffer_data.push((padding[4], padding[5], padding[6], padding[7]));
+        buffer_data.push((padding[8], padding[9], padding[10], padding[11]));
+        buffer_data.push((padding[12], padding[13], padding[14], padding[15]));
+        group_size += 1;
+    }
+
+    println!("buffer data {:?}", buffer_data);
+
+    let texture = BufferTexture::new(facade, buffer_data.as_slice(), BufferTextureType::Unsigned);
 
     let texture: BufferTexture<(u8,u8,u8,u8)> = match texture {
         Ok(t) => t,
@@ -72,8 +99,8 @@ pub fn decode_data_from_texture(texture: glium::Texture2d) -> Vec<u8> {
     return data_vec;
 }
 
-pub fn read_file_as_bytes() -> Vec<u8> {
-    let mut f = File::open("/home/disoul/github/rust-glaes/src/input.in").expect("input err");
+pub fn read_file_as_bytes(name: &'static str) -> Vec<u8> {
+    let mut f = File::open(name).expect("input err");
     let bytes = f.bytes();
 
     let mut byte_data: Vec<u8> = vec![];
@@ -82,4 +109,11 @@ pub fn read_file_as_bytes() -> Vec<u8> {
     }
 
     return byte_data;
+}
+
+pub fn bytes_to_hex_string(bytes: Vec<u8>) -> String {
+  let strs: Vec<String> = bytes.iter()
+                               .map(|b| format!("{:02X}", b))
+                               .collect();
+  strs.connect("")
 }

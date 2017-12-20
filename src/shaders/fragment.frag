@@ -5,6 +5,8 @@ uniform usamplerBuffer input;
 uniform usamplerBuffer secret;
 uniform usamplerBuffer rc;
 uniform usampler2D sbox;
+uniform uint size;
+
 in vec2 point_pos;
 out uvec4 color;
 
@@ -174,6 +176,17 @@ vec4 get_write_data(mat4 data) {
   }
 }
 
+vec4 get_read_data(usamplerBuffer input, int i) {
+  // x -> -1.0 ... 1.0 -> 0.0 ... 1.0
+  float x = (point_pos.x + 1.0) / 2.0;
+  float slice_width = 1.0 / float(size);
+
+  float base_index_f = x / slice_width;
+  int base_index = int(floor(base_index_f));
+
+  return texelFetch(input, base_index * 4 + i);
+}
+
 mat4 pipeline(mat4 input, mat4 secret, int rounds) {
   mat4 output = input;
   output = mat_xor(input, secret);
@@ -186,16 +199,16 @@ mat4 pipeline(mat4 input, mat4 secret, int rounds) {
 
 void main() {
   mat4 input_mat;
-  input_mat[0] = texelFetch(input, 0);
-  input_mat[1] = texelFetch(input, 1);
-  input_mat[2] = texelFetch(input, 2);
-  input_mat[3] = texelFetch(input, 3);
+  input_mat[0] = get_read_data(input, 0);
+  input_mat[1] = get_read_data(input, 1);
+  input_mat[2] = get_read_data(input, 2);
+  input_mat[3] = get_read_data(input, 3);
 
   mat4 secret_mat;
-  secret_mat[0] = texelFetch(secret, 0);
-  secret_mat[1] = texelFetch(secret, 1);
-  secret_mat[2] = texelFetch(secret, 2);
-  secret_mat[3] = texelFetch(secret, 3);
+  secret_mat[0] = get_read_data(secret, 0);
+  secret_mat[1] = get_read_data(secret, 1);
+  secret_mat[2] = get_read_data(secret, 2);
+  secret_mat[3] = get_read_data(secret, 3);
 
 
   /**
