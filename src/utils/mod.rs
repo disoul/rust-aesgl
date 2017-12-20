@@ -6,6 +6,9 @@ use glium::texture::Texture2d;
 use glium::texture::buffer_texture::BufferTexture;
 use glium::texture::buffer_texture::BufferTextureType;
 
+use std::fs::File;
+use std::io::prelude::*;
+
 
 pub fn get_sbox_texture<F: ?Sized>(facade: &F) -> UnsignedTexture2d  where F: glium::backend::Facade {
     let S_BOX: Vec<Vec<(u8, u8, u8, u8)>> = vec![
@@ -67,4 +70,16 @@ pub fn decode_data_from_texture(texture: glium::Texture2d) -> Vec<u8> {
     }
 
     return data_vec;
+}
+
+pub fn read_file_as_bytes() -> Vec<u8> {
+    let mut f = File::open("/home/disoul/github/rust-glaes/src/input.in").expect("input err");
+    let bytes = f.bytes();
+
+    let mut byte_data: Vec<u8> = vec![];
+    for byte in bytes {
+        byte_data.push(byte.unwrap());
+    }
+
+    return byte_data;
 }
