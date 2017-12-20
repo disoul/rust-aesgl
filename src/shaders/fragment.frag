@@ -181,7 +181,6 @@ mat4 pipeline(mat4 input, mat4 secret, int rounds) {
   output = row_shift(output);
   output = mix_columns(output);
 
-  mat4 new_secret = secret_update(secret, rounds + 1);
   return output;
 }
 
@@ -198,8 +197,19 @@ void main() {
   secret_mat[2] = texelFetch(secret, 2);
   secret_mat[3] = texelFetch(secret, 3);
 
-  mat4 output = pipeline(input_mat, secret_mat, 0);
-  vec4 data = get_write_data(output);
+
+  /**
+   * 开始主加密循环, 对于AES128加密10轮
+   */
+  mat4 current_secret = secret_mat;
+  mat4 current_input = input_mat;
+  for (int i = 0; i < 10; i++) {
+    if (i > 0) {
+      current_secret = secret_update(current_secret, i);
+    }
+    current_input = pipeline(current_input, current_secret, i);
+  }
+  vec4 data = get_write_data(current_input);
 
   gl_FragColor = vec4(data[0] / 255.0, data[1] / 255.0, data[2] / 255.0, data[3] / 255.0);
 }
